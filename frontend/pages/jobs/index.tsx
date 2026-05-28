@@ -3,10 +3,12 @@
  * Browse all open jobs with category filtering and search autocomplete.
  */
 import JobCard, { JobCardSkeleton } from "@/components/JobCard";
+import StateMessage from "@/components/StateMessage";
 import { fetchJobs, fetchRecommendedJobs } from "@/lib/api";
 import { JOB_CATEGORIES, CATEGORY_ICONS, categoryToSlug } from "@/utils/format";
 import type { Job } from "@/utils/types";
 import clsx from "clsx";
+import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -712,16 +714,21 @@ export default function JobsPage({ publicKey }: { publicKey?: string | null }) {
               ))}
             </div>
           ) : error ? (
-            <div className="card text-center py-12">
-              <p className="text-red-400 mb-3">{error}</p>
-              <button onClick={() => window.location.reload()} className="btn-secondary text-sm">Retry</button>
-            </div>
+            <StateMessage
+              type="error"
+              title="Something went wrong"
+              description="Please try again."
+              ctaLabel="Retry"
+              onCta={() => window.location.reload()}
+            />
           ) : filtered.length === 0 ? (
-            <div className="card text-center py-16">
-              <p className="font-display text-xl text-amber-100 mb-2">{t("jobs.noJobsFound")}</p>
-              <p className="text-amber-800 text-sm mb-6">{t("jobs.tryAdjusting")}</p>
-              <Link href="/post-job" locale={false} className="btn-primary text-sm">{t("jobs.postFirstJob")} →</Link>
-            </div>
+            <StateMessage
+              type="empty"
+              title="No jobs match your filters"
+              description="Try adjusting your search or filters."
+              ctaLabel="Post a Job"
+              onCta={() => router.push('/post-job')}
+            />
           ) : (
             <>
               <div className="grid sm:grid-cols-2 gap-4">

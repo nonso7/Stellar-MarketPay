@@ -22,6 +22,7 @@ import {
   bulkExtendJobs,
   bulkBoostJobs,
 } from "@/lib/api";
+import StateMessage from "@/components/StateMessage";
 import {
   formatXLM,
   shortenAddress,
@@ -558,17 +559,13 @@ export default function Dashboard({ publicKey, onConnect }: DashboardProps) {
           </div>
         ) : tab === "posted" ? (
           myJobs.length === 0 ? (
-            <div className="card text-center py-16">
-              <p className="font-display text-xl text-amber-100 mb-2">
-                No jobs posted yet
-              </p>
-              <p className="text-amber-800 text-sm mb-6">
-                Post your first job and find a great freelancer
-              </p>
-              <Link href="/post-job" className="btn-primary text-sm">
-                Post a Job →
-              </Link>
-            </div>
+            <StateMessage
+              type="empty"
+              title="You haven't posted any jobs yet"
+              description="Post your first job and find a great freelancer"
+              ctaLabel="Post a Job"
+              onCta={() => router.push('/post-job')}
+            />
           ) : (
             <div className="space-y-3">
               <div className="flex justify-end mb-2">
@@ -624,17 +621,13 @@ export default function Dashboard({ publicKey, onConnect }: DashboardProps) {
           )
         ) : tab === "applied" ? (
           myApplications.length === 0 ? (
-            <div className="card text-center py-16">
-              <p className="font-display text-xl text-amber-100 mb-2">
-                No applications yet
-              </p>
-              <p className="text-amber-800 text-sm mb-6">
-                Browse open jobs and submit your first proposal
-              </p>
-              <Link href="/jobs" className="btn-primary text-sm">
-                Browse Jobs →
-              </Link>
-            </div>
+            <StateMessage
+              type="empty"
+              title="You haven't applied to any jobs yet"
+              description="Browse open jobs and submit your first proposal"
+              ctaLabel="Browse Jobs"
+              onCta={() => router.push('/jobs')}
+            />
           ) : (
             <div className="space-y-3">
               <div className="flex justify-end mb-2">
@@ -739,100 +732,121 @@ export default function Dashboard({ publicKey, onConnect }: DashboardProps) {
                 {editingTemplateId ? "Update Template" : "Create Template"}
               </button>
             </div>
-            {templates.map((template) => (
-              <div key={template.id} className="card">
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <p className="text-amber-100 font-medium">{template.name}</p>
-                  <div className="flex gap-2">
-                    <button
-                      className="btn-secondary text-xs px-3 py-1.5"
-                      onClick={() => {
-                        setEditingTemplateId(template.id);
-                        setTemplateName(template.name);
-                        setTemplateContent(template.content);
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn-secondary text-xs px-3 py-1.5"
-                      onClick={async () => {
-                        await deleteProposalTemplate(template.id);
-                        setTemplates((current) =>
-                          current.filter((item) => item.id !== template.id),
-                        );
-                      }}
-                    >
-                      Delete
-                    </button>
+            {templates.length === 0 ? (
+              <StateMessage
+                type="empty"
+                title="No proposal templates"
+                description="Create a template to speed up your proposals"
+                ctaLabel="Create Template"
+                onCta={() => {
+                  setTemplateName('');
+                  setTemplateContent('');
+                }}
+              />
+            ) : (
+              templates.map((template) => (
+                <div key={template.id} className="card">
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <p className="text-amber-100 font-medium">{template.name}</p>
+                    <div className="flex gap-2">
+                      <button
+                        className="btn-secondary text-xs px-3 py-1.5"
+                        onClick={() => {
+                          setEditingTemplateId(template.id);
+                          setTemplateName(template.name);
+                          setTemplateContent(template.content);
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="btn-secondary text-xs px-3 py-1.5"
+                        onClick={async () => {
+                          await deleteProposalTemplate(template.id);
+                          setTemplates((current) =>
+                            current.filter((item) => item.id !== template.id),
+                          );
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
+                  <p className="text-sm text-amber-700 whitespace-pre-wrap">
+                    {template.content}
+                  </p>
                 </div>
-                <p className="text-sm text-amber-700 whitespace-pre-wrap">
-                  {template.content}
-                </p>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         ) : tab === "price_alerts" ? (
-          <div className="card space-y-4 max-w-lg">
-            <input
-              type="number"
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-              className="input-field"
-              placeholder="Alert if XLM drops below (USD)"
-            />
-            <input
-              type="number"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-              className="input-field"
-              placeholder="Alert if XLM rises above (USD)"
-            />
-            <label className="flex items-center gap-2 text-sm text-amber-200">
-              <input
-                type="checkbox"
-                checked={emailEnabled}
-                onChange={(e) => setEmailEnabled(e.target.checked)}
-              />
-              Enable email notifications
-            </label>
-            {emailEnabled && (
-              <input
-                value={alertEmail}
-                onChange={(e) => setAlertEmail(e.target.value)}
-                className="input-field"
-                placeholder="Email address"
-              />
-            )}
-            <button
-              className="btn-primary text-sm"
-              onClick={async () => {
-                await upsertPriceAlertPreference(publicKey, {
-                  minXlmPriceUsd: minPrice ? Number(minPrice) : null,
-                  maxXlmPriceUsd: maxPrice ? Number(maxPrice) : null,
-                  emailNotificationsEnabled: emailEnabled,
-                  email: alertEmail,
-                });
-                success("Price alert settings saved");
+          (!minPrice && !maxPrice && !emailEnabled) ? (
+            <StateMessage
+              type="empty"
+              title="No price alerts set"
+              description="Configure alerts to stay informed about XLM price changes"
+              ctaLabel="Add Alert"
+              onCta={() => {
+                // focus could be added later
               }}
-            >
-              Save Alerts
-            </button>
-          </div>
-        ) : tab === "withdrawals" ? (
-          withdrawHistory.length === 0 ? (
-            <div className="card text-center py-16">
-              <p className="font-display text-xl text-amber-100 mb-2">
-                No withdrawals yet
-              </p>
+            />
+          ) : (
+            <div className="card space-y-4 max-w-lg">
+              <input
+                type="number"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                className="input-field"
+                placeholder="Alert if XLM drops below (USD)"
+              />
+              <input
+                type="number"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                className="input-field"
+                placeholder="Alert if XLM rises above (USD)"
+              />
+              <label className="flex items-center gap-2 text-sm text-amber-200">
+                <input
+                  type="checkbox"
+                  checked={emailEnabled}
+                  onChange={(e) => setEmailEnabled(e.target.checked)}
+                />
+                Enable email notifications
+              </label>
+              {emailEnabled && (
+                <input
+                  value={alertEmail}
+                  onChange={(e) => setAlertEmail(e.target.value)}
+                  className="input-field"
+                  placeholder="Email address"
+                />
+              )}
               <button
-                onClick={() => setShowWithdraw(true)}
                 className="btn-primary text-sm"
+                onClick={async () => {
+                  await upsertPriceAlertPreference(publicKey, {
+                    minXlmPriceUsd: minPrice ? Number(minPrice) : null,
+                    maxXlmPriceUsd: maxPrice ? Number(maxPrice) : null,
+                    emailNotificationsEnabled: emailEnabled,
+                    email: alertEmail,
+                  });
+                  success("Price alert settings saved");
+                }}
               >
-                Withdraw to Bank →
+                Save Alerts
               </button>
             </div>
+          )
+        ) : tab === "withdrawals" ? (
+          withdrawHistory.length === 0 ? (
+            <StateMessage
+              type="empty"
+              title="No withdrawals yet"
+              description="Add a withdrawal to move funds to your bank account"
+              ctaLabel="Withdraw now"
+              onCta={() => setShowWithdraw(true)}
+            />
           ) : (
             <div className="space-y-3">
               {withdrawHistory.map((entry) => (

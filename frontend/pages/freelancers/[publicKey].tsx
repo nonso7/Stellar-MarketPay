@@ -12,7 +12,9 @@ import {
   verifyIdentity,
   fetchSkillEndorsements,
   endorseSkill,
+  fetchSkillBadges,
 } from "@/lib/api";
+import StateMessage from "@/components/StateMessage";
 import {
   availabilityStatusLabel,
   availabilitySummary,
@@ -25,6 +27,7 @@ import type {
   PortfolioItem,
   SkillEndorsement,
   UserProfile,
+  SkillBadge,
 } from "@/utils/types";
 
 type LoadState =
@@ -77,6 +80,7 @@ export default function PublicFreelancerProfilePage({
   const [verifying, setVerifying] = useState(false);
   const [endorsements, setEndorsements] = useState<SkillEndorsement[]>([]);
   const [endorsingSkill, setEndorsingSkill] = useState<string | null>(null);
+  const [badges, setBadges] = useState<SkillBadge[]>([]);
 
   const isOwner = publicKey && rawKey === publicKey;
 
@@ -95,21 +99,6 @@ export default function PublicFreelancerProfilePage({
       console.error("Verification error:", error);
     } finally {
       setVerifying(false);
-    }
-  };
-
-  const handleEndorse = async (skill: string) => {
-    if (!publicKey || isOwner) return;
-    setEndorsingSkill(skill);
-    try {
-      await endorseSkill(rawKey, skill);
-      const refreshed = await fetchSkillEndorsements(rawKey);
-      setEndorsements(refreshed);
-    } catch (error: unknown) {
-      console.error("Endorsement error:", error);
-      alert(error instanceof Error ? error.message : "Failed to endorse skill");
-    } finally {
-      setEndorsingSkill(null);
     }
   };
 
@@ -390,18 +379,25 @@ export default function PublicFreelancerProfilePage({
                   className="mt-2"
                 />
               </div>
-              <div className="rounded-xl bg-ink-900/50 border border-market-500/10 p-4">
-                <p className="label mb-1">Average rating</p>
-                <p className="font-display text-2xl sm:text-3xl font-bold text-market-400">
-                  {state.profile.rating?.toFixed(2) ?? "New"}
-                </p>
-              </div>
+              {state.profile.rating == null ? (
+                <StateMessage
+                  type="empty"
+                  title="No reviews yet"
+                  description="Be the first to hire this freelancer"
+                  ctaLabel="Hire now"
+                  onCta={() => router.push(`/jobs?search=${state.profile.publicKey}`)}
+                />
+              ) : (
+                <div className="rounded-xl bg-ink-900/50 border border-market-500/10 p-4">
+                  <p className="label mb-1">Average rating</p>
+                  <p className="font-display text-2xl sm:text-3xl font-bold text-market-400">
+                    {state.profile.rating?.toFixed(2) ?? "New"}
+                  </p>
+                </div>
+              )}
               <div className="rounded-xl bg-ink-900/50 border border-market-500/10 p-4">
                 <p className="label mb-1">Success rate</p>
                 <p className="font-display text-2xl sm:text-3xl font-bold text-market-400">
-                  {stats ? `${stats.successRate}%` : "—"}
-                </p>
-                <p className="text-[10px] uppercase tracking-wider text-amber-800 mt-1">
                   {stats?.acceptedApplications || 0} / {stats?.totalApplications || 0} accepted
                 </p>
               </div>
