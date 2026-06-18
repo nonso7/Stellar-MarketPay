@@ -49,9 +49,13 @@ CREATE TABLE IF NOT EXISTS insurance_claims (
     CONSTRAINT valid_claim_amount CHECK (claim_amount > 0),
     CONSTRAINT valid_status CHECK (
         status IN ('pending', 'proof_submitted', 'approved', 'rejected')
-    ),
-    CONSTRAINT unique_active_claim_per_file UNIQUE (file_id) WHERE status != 'rejected'
+    )
 );
+
+-- Partial unique index: only one active claim per file (excluding rejected)
+CREATE UNIQUE INDEX idx_unique_active_claim_per_file
+ON insurance_claims(file_id)
+WHERE status != 'rejected';
 
 CREATE INDEX idx_insurance_claims_file_id ON insurance_claims(file_id);
 CREATE INDEX idx_insurance_claims_owner ON insurance_claims(owner_address);
