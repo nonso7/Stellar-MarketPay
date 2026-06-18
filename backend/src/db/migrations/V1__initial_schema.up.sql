@@ -237,8 +237,39 @@ CREATE TABLE IF NOT EXISTS messages (
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ─────────────────────────────────────────
+-- referrals
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS referrals (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  referrer_address TEXT        NOT NULL REFERENCES profiles(public_key),
+  referee_address  TEXT        NOT NULL REFERENCES profiles(public_key),
+  job_id           UUID        REFERENCES jobs(id),
+  status           TEXT        NOT NULL DEFAULT 'pending',
+  payout_amount    NUMERIC(20,7),
+  paid_at          TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (referrer_address, referee_address)
+);
+
 CREATE INDEX IF NOT EXISTS referrals_referrer_address_idx ON referrals(referrer_address);
 CREATE INDEX IF NOT EXISTS referrals_job_id_idx          ON referrals(job_id);
+
+-- ─────────────────────────────────────────
+-- referral_payouts
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS referral_payouts (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  referral_id      UUID        NOT NULL REFERENCES referrals(id),
+  referrer_address TEXT        NOT NULL REFERENCES profiles(public_key),
+  referee_address  TEXT        NOT NULL REFERENCES profiles(public_key),
+  job_id           UUID        NOT NULL REFERENCES jobs(id),
+  amount_xlm       NUMERIC(20,7) NOT NULL,
+  contract_tx_hash TEXT,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS referral_payouts_referrer_idx ON referral_payouts(referrer_address);
 
 -- ─────────────────────────────────────────
 -- scope_sessions (real-time collaborative editor — Issue #227)
